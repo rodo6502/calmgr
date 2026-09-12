@@ -10,6 +10,29 @@ It provides a terminal interface, a batch interface and a Flask based web interf
 
 CALMGR is inspired by enterprise applications of the VAX/VMS and mainframe era.
 
+## Screenshots
+
+### Terminal interface
+
+The terminal interface provides direct access to the main appointment,
+reporting, backup and maintenance functions.
+
+![CALMGR terminal interface](docs/screenshots/calmgr-tui.png)
+
+### Web interface
+
+The optional Flask frontend uses the CALMGR batch interface and provides
+access to the same appointment data from a browser.
+
+![CALMGR web interface](docs/screenshots/calmgr-web.png)
+
+### Month view
+
+The month view provides a compact overview of appointments and recurring
+entries.
+
+![CALMGR month view](docs/screenshots/calmgr-calendar.png)
+
 ## Why CALMGR?
 
 CALMGR started out of curiosity and for hobbyist reasons. I wanted to build something substantial with GnuCOBOL, not just another small example program. I have also always enjoyed the character of traditional business software.
