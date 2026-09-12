@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Appointments · CALMGR{% endblock %}
+{% block body %}
+<section class="toolbar">
+  <div><p class="eyebrow">{{ count }} RECORDS</p><h2>{{ 'Current' if mode == 'current' else 'All' }} appointments</h2></div>
+  <div class="segmented"><a class="{{ 'active' if mode == 'current' }}" href="{{ url_for('index', mode='current') }}">Current</a><a class="{{ 'active' if mode == 'all' }}" href="{{ url_for('index', mode='all') }}">All</a></div>
+</section>
+<div class="actions quick-links"><a class="button secondary" href="{{ url_for('index', mode='all', from_date=today_display, to_date=today_display) }}">Today</a><a class="button secondary" href="{{ url_for('calendar_week') }}">This week</a><a class="button secondary" href="{{ url_for('calendar_week', date=next_week_iso) }}">Next week</a></div>
+<form method="get" class="filter-grid">
+  <label>List<select name="mode"><option value="current" {{ 'selected' if filters.mode == 'current' }}>Current</option><option value="all" {{ 'selected' if filters.mode == 'all' }}>All</option></select></label>
+  <label>Client contains<input name="client" value="{{ filters.client }}" maxlength="60"></label>
+  <label>Subject contains<input name="subject" value="{{ filters.subject }}" maxlength="100"></label>
+  <label>From date <span>DD.MM.YYYY</span><input name="from_date" value="{{ filters.from_date }}" maxlength="10" placeholder="01.01.2027"></label>
+  <label>Through date <span>DD.MM.YYYY</span><input name="to_date" value="{{ filters.to_date }}" maxlength="10" placeholder="31.12.2027"></label>
+  <label>ISO year<input name="iso_year" value="{{ filters.iso_year }}" maxlength="4" inputmode="numeric"></label>
+  <label>ISO week<input name="iso_week" value="{{ filters.iso_week }}" maxlength="2" placeholder="1–53" inputmode="numeric"></label>
+  <label>Status<select name="status"><option value="all" {{ 'selected' if filters.status == 'all' }}>All</option><option value="active" {{ 'selected' if filters.status == 'active' }}>Active</option><option value="cancelled" {{ 'selected' if filters.status == 'cancelled' }}>Cancelled</option></select></label>
+  <label>Series ID<input name="series_id" value="{{ filters.series_id }}" maxlength="9" inputmode="numeric"></label>
+  <label>Sort<select name="sort"><option value="date" {{ 'selected' if filters.sort == 'date' }}>Date</option><option value="client" {{ 'selected' if filters.sort == 'client' }}>Client</option><option value="subject" {{ 'selected' if filters.sort == 'subject' }}>Subject</option><option value="status" {{ 'selected' if filters.sort == 'status' }}>Status</option><option value="id" {{ 'selected' if filters.sort == 'id' }}>ID</option></select></label>
+  <div class="actions filter-actions"><button class="button" type="submit">Apply filters</button><a class="button secondary" href="{{ url_for('index') }}">Reset</a><a class="button secondary" href="{{ url_for('csv_export') }}">Export result as CSV</a></div>
+</form>
+{% if items %}
+<div class="table-wrap"><table><thead><tr><th>Date</th><th>KW</th><th>Client</th><th>Subject</th><th>Status</th><th></th></tr></thead><tbody>
+{% for a in items %}<tr><td class="mono">{{ display_date(a.start_date) }}{% if a.end_date != a.start_date %}<br>– {{ display_date(a.end_date) }}{% endif %}</td><td class="mono">{{ a.iso_week }}/{{ a.iso_year }}</td><td>{{ a.client }}</td><td>{{ a.subject }}</td><td><span class="status {{ 'cancelled' if a.status == 'C' else 'active' }}">{{ 'Cancelled' if a.status == 'C' else 'Active' }}</span></td><td><a class="button secondary" href="{{ url_for('show', appointment_id=a.id) }}">Open</a></td></tr>{% endfor %}
+</tbody></table></div>
+{% else %}<div class="empty"><p>No appointments in this view.</p><a class="button" href="{{ url_for('new') }}">Add appointment</a></div>{% endif %}
+{% endblock %}

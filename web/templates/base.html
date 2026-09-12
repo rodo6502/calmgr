@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}CALMGR{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="site-header">
+  <div>
+    <p class="eyebrow">LOCAL CONSOLE</p>
+    <h1>CALMGR</h1>
+  </div>
+  {% if signed_in_user %}
+  <nav aria-label="Main navigation">
+    <a href="{{ url_for('index') }}">Appointments</a>
+    <a href="{{ url_for('new') }}">Add</a>
+    <a href="{{ url_for('export_view') }}">Export</a>
+    <a href="{{ url_for('calendar_week') }}">Week</a>
+    <a href="{{ url_for('calendar_month') }}">Month</a>
+    <a href="{{ url_for('trash_view') }}">Trash</a>
+    <a href="{{ url_for('backup_restore') }}">Backup</a>
+    <a href="{{ url_for('audit_view') }}">Audit</a>
+    <form method="post" action="{{ url_for('logout') }}" class="nav-form">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <button type="submit" class="link-button" title="Sign out">{{ signed_in_user }} · Sign out</button>
+    </form>
+  </nav>
+  {% endif %}
+</header>
+<main>
+  {% for category, message in get_flashed_messages(with_categories=true) %}
+    <div class="notice {{ category }}" role="status">{{ message }}</div>
+  {% endfor %}
+  {% block body %}{% endblock %}
+</main>
+<footer>Bound to 127.0.0.1 · COBOL remains the system of record</footer>
+</body>
+</html>

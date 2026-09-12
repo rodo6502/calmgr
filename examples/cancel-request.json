@@ -1,0 +1,6 @@
+{
+  "command": "cancel",
+  "id": "000000001",
+  "scope": "series",
+  "cancel_note": "Customer request"
+}

@@ -1,0 +1,8 @@
+{
+  "command": "edit",
+  "id": "000000001",
+  "client": "Updated Customer",
+  "subject": "Updated subject",
+  "scope": "following",
+  "expected_revision": "1"
+}

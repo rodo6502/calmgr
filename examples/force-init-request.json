@@ -1,0 +1,5 @@
+{
+  "command": "init",
+  "mode": "force",
+  "confirm": "ERASE"
+}

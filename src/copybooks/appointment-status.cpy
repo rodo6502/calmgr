@@ -1,0 +1,12 @@
+       78 APPT-OK                    VALUE 0.
+       78 APPT-INVALID-REQUEST       VALUE 10.
+       78 APPT-INVALID-DATE          VALUE 11.
+       78 APPT-NOT-FOUND             VALUE 12.
+       78 APPT-DUPLICATE             VALUE 13.
+       78 APPT-CONFLICT              VALUE 14.
+       78 APPT-FORBIDDEN             VALUE 15.
+       78 APPT-REPOSITORY-ERROR      VALUE 20.
+       78 APPT-LOCKED                VALUE 21.
+       78 APPT-DAMAGED-DATA          VALUE 22.
+       78 APPT-IO-ERROR              VALUE 23.
+       78 APPT-INTERNAL-ERROR        VALUE 30.

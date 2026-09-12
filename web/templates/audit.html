@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}Audit log{% endblock %}{% block body %}
+<p class="eyebrow">READ ONLY</p><h2>Audit log</h2>
+<form method="get" class="filter-grid"><label>Appointment ID<input name="id" value="{{ filters.id }}" maxlength="9"></label><label>Action<input name="action" value="{{ filters.action }}"></label><label>Source<input name="source" value="{{ filters.source }}"></label><div class="actions filter-actions"><button class="button">Filter</button><a class="button secondary" href="{{ url_for('audit_view') }}">Reset</a><a class="button secondary" href="{{ url_for('audit_download', format='txt') }}">Text</a><a class="button secondary" href="{{ url_for('audit_download', format='csv') }}">CSV</a></div></form>
+<div class="table-wrap"><table><thead><tr><th>Time</th><th>Action</th><th>ID</th><th>Source</th><th>Detail</th></tr></thead><tbody>{% for e in entries %}<tr><td class="mono">{{ e.time }}</td><td>{{ e.action }}</td><td class="mono">{{ e.id or '—' }}</td><td>{{ e.source }}</td><td>{{ e.detail }}</td></tr>{% else %}<tr><td colspan="5">No matching audit entries.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

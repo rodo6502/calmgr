@@ -1,0 +1,4 @@
+{
+  "command": "csv-import",
+  "path": "examples/appointments-import.csv"
+}

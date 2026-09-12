@@ -1,0 +1,5 @@
+{
+  "command": "print-export",
+  "from_date": "2027-01-01",
+  "to_date": "2027-12-31"
+}

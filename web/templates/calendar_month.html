@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}Month calendar{% endblock %}{% block body %}
+<section class="toolbar"><div><p class="eyebrow">MONTH VIEW</p><h2>{{ anchor.strftime('%B %Y') }}</h2></div><div class="actions"><a class="button secondary" href="{{ url_for('calendar_month', date=previous.isoformat()) }}">Previous</a><a class="button secondary" href="{{ url_for('calendar_month') }}">Today</a><a class="button" href="{{ url_for('calendar_month', date=next.isoformat()) }}">Next</a></div></section>
+<div class="month-head"><div>KW</div>{% for name in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}<div>{{ name }}</div>{% endfor %}</div>
+<div class="month-grid">{% for week in weeks %}<div class="week-number">{{ week.iso_week }}</div>{% for cell in week.cells %}<section class="month-day {{ 'outside' if not cell.current_month }} {{ 'today' if cell.day == today }}"><strong>{{ cell.day.day }}</strong>{% for a in cell.appts %}<a class="calendar-item {{ 'cancelled' if a.status == 'C' else 'active' }}" href="{{ url_for('show', appointment_id=a.id) }}">{{ a.subject }}</a>{% endfor %}</section>{% endfor %}{% endfor %}</div>
+{% endblock %}

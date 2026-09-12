@@ -1,0 +1,20 @@
+       01 APPOINTMENT-RECORD.
+          05 AR-SCHEMA-VERSION       PIC 9(2).
+          05 AR-ID                   PIC X(9).
+          05 AR-SERIES-ID            PIC X(9).
+          05 AR-START-DATE           PIC 9(8).
+          05 AR-END-DATE             PIC 9(8).
+          05 AR-ISO-YEAR             PIC 9(4).
+          05 AR-ISO-WEEK             PIC 9(2).
+          05 AR-CLIENT               PIC X(60).
+          05 AR-SUBJECT              PIC X(100).
+          05 AR-STATUS               PIC X.
+             88 AR-ACTIVE            VALUE "A".
+             88 AR-CANCELLED         VALUE "C".
+          05 AR-CREATED-AT           PIC X(20).
+          05 AR-UPDATED-AT           PIC X(20).
+          05 AR-CANCELLED-ON         PIC 9(8).
+          05 AR-CANCEL-NOTE          PIC X(120).
+          05 AR-RECURRENCE           PIC X.
+          05 AR-SERIES-UNTIL         PIC 9(8).
+          05 AR-REVISION             PIC 9(9).

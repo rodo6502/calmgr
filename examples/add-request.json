@@ -1,0 +1,9 @@
+{
+  "command": "add",
+  "start_date": "2027-09-15",
+  "end_date": "2027-09-15",
+  "client": "Example Customer",
+  "subject": "Project status meeting",
+  "recurrence": "W",
+  "series_until": "2027-12-15"
+}

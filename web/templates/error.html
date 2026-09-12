@@ -1,0 +1,1 @@
+{% extends "base.html" %}{% block title %}Error{% endblock %}{% block body %}<p class="eyebrow">CONTROLLED ERROR</p><h2>Operation failed</h2><div class="notice error">{{ message }}</div><div class="actions"><a class="button secondary" href="{{ url_for('index') }}">Back to appointments</a></div>{% endblock %}

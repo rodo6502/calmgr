@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Sign in · CALMGR{% endblock %}
+{% block body %}
+<section class="login-panel">
+  <p class="eyebrow">LOCAL AUTHENTICATION</p>
+  <h2>Sign in</h2>
+  <form method="post" class="form-grid compact">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <label class="wide">Username<input name="username" autocomplete="username" required autofocus></label>
+    <label class="wide">Password<input type="password" name="password" autocomplete="current-password" required></label>
+    <div class="actions wide"><button class="button" type="submit">Sign in</button></div>
+  </form>
+</section>
+{% endblock %}

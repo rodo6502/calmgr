@@ -1,0 +1,25 @@
+calmgr
+calmgr-batch
+# Runtime data named by calmgr.conf
+appointments.dat
+appointments.dat.*
+appointments_backup.dat
+appointments_backup.dat.*
+appointments_safety_backup.dat
+appointments_safety_backup.dat.*
+*.db
+*.db-wal
+*.db-shm
+*.json.tmp
+appointment_audit.log
+appointment_calendar.txt
+data/*
+!data/.gitkeep
+imports/*
+!imports/.gitkeep
+build/
+*.tar.gz
+*.ics
+response.json
+.venv/
+__pycache__/

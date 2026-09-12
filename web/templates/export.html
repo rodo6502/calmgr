@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% block title %}Export{% endblock %}{% block body %}
+<p class="eyebrow">80 COLUMNS · CONFIGURED PAGE LENGTH</p><h2>Create print export</h2>
+<form method="post" class="form-grid compact">
+  <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+  <label>First ISO year<input name="first_year" value="{{ first_year }}" required maxlength="4"></label>
+  <label>Last ISO year<input name="last_year" value="{{ last_year }}" required maxlength="4"></label>
+  <fieldset class="wide export-choice">
+    <legend>Report layout</legend>
+    <label class="radio-choice"><input type="radio" name="report_type" value="appointments" {% if report_type == 'appointments' %}checked{% endif %}><span><strong>Streamlined appointments</strong><small>WK · DATE · RANGE · CLIENT · APPOINTMENT / SUBJECT. Compact columns with wrapped subject text; continuation lines align under APPOINTMENT / SUBJECT. Remaining page lines stay blank until the footer.</small></span></label>
+    <label class="radio-choice"><input type="radio" name="report_type" value="calendar" {% if report_type == 'calendar' %}checked{% endif %}><span><strong>Calendar report</strong><small>Calendar grouped by ISO week (KW). Active appointments appear under their week with date range, client and subject; no IDs/status/technical details.</small></span></label>
+  </fieldset>
+  <div class="actions wide"><button class="button">Create export</button><a class="button secondary" href="{{ url_for('print_export_download', first_year=first_year, last_year=last_year, report_type=report_type) }}">Download selected print file</a></div>
+</form>
+{% if result %}<div class="result-card"><p class="eyebrow">EXPORT COMPLETE</p><p>{{ result.message }}</p><p class="mono">{{ result.output_path }}</p><a class="button secondary" href="{{ url_for('print_export_download', first_year=first_year, last_year=last_year, report_type=report_type) }}">Download generated report</a></div>{% endif %}
+<section class="csv-panel"><p class="eyebrow">SEMICOLON CSV · UTF-8</p><h2>CSV export</h2><p>Exported rows can be opened in a spreadsheet or imported again.</p><div class="actions"><a class="button" href="{{ url_for('csv_export') }}">Export all records</a><a class="button secondary" href="{{ url_for('csv_export', status='A') }}">Export active records</a></div></section>
+<section class="csv-panel"><p class="eyebrow">RFC 5545 · UTF-8 · CRLF</p><h2>iCalendar export</h2><div class="actions"><a class="button" href="{{ url_for('ical_export') }}">Export all appointments</a><a class="button secondary" href="{{ url_for('ical_export', status='A') }}">Active only</a></div></section>
+{% endblock %}

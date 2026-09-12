@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y gnucobol libsqlite3-dev libsodium-dev python3-pip ripgrep
+      - name: Install Python dependencies
+        run: python3 -m pip install -r requirements.txt
+      - name: Build and test
+        run: |
+          make clean
+          make all
+          make test
+          make check

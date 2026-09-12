@@ -1,0 +1,8 @@
+{
+  "ok": true,
+  "code": 0,
+  "message": "Appointment(s) created",
+  "count": 1,
+  "output_path": "",
+  "appointments": []
+}

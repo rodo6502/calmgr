@@ -1,0 +1,8 @@
+{
+  "ok": false,
+  "code": 10,
+  "message": "Unsupported command",
+  "count": 0,
+  "output_path": "",
+  "appointments": []
+}

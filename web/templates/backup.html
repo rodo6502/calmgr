@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% block title %}Backup and restore{% endblock %}{% block body %}
+<p class="eyebrow">CONTROLLED COBOL OPERATIONS</p><h2>Backup and restore</h2>
+{% if info.exists %}<dl class="details"><div><dt>Created</dt><dd>{{ info.created.strftime('%d.%m.%Y %H:%M:%S') }}</dd></div><div><dt>Records</dt><dd>{{ info.count }}</dd></div><div><dt>File size</dt><dd>{{ info.size }} bytes</dd></div></dl>{% else %}<div class="empty">No backup is available.</div>{% endif %}
+<form method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="backup"><button class="button">Create manual backup</button></form>
+{% if info.exists %}<section class="danger-zone"><h3>Restore backup</h3><p><strong>Warning:</strong> restore replaces the complete current data set. The COBOL service creates a safety backup first.</p><form method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="restore"><label>Type RESTORE<input name="confirm" required autocomplete="off"></label><button class="button danger">Restore</button></form></section>{% endif %}
+{% endblock %}
