@@ -3,16 +3,16 @@
 
 from pathlib import Path
 
+
 RECORD_BYTES = 82
 TEXT_BYTES = 80
-LINES_PER_PAGE = 20
+SYSTEM_HEADING = b"CALENDAR MANAGEMENT SYSTEM"
 
 
 def validate(
     path: Path,
-    title: bytes,
     report_id: bytes,
-    end_marker: bytes,
+    title: bytes,
     client_column: int | None,
 ) -> None:
     data = path.read_bytes()
@@ -23,75 +23,89 @@ def validate(
         )
 
     records = [
-        data[i : i + RECORD_BYTES]
+        data[i:i + RECORD_BYTES]
         for i in range(0, len(data), RECORD_BYTES)
     ]
 
-    if len(records) % LINES_PER_PAGE:
-        raise SystemExit(f"{path}: incomplete fanfold page")
-
     for number, record in enumerate(records, 1):
-        if (
-            len(record[:TEXT_BYTES]) != TEXT_BYTES
-            or record[TEXT_BYTES:] != b"\r\n"
-        ):
+        if len(record) != RECORD_BYTES:
             raise SystemExit(
-                f"{path}: invalid fixed record at line {number}"
+                f"{path}: invalid record length at line {number}"
             )
 
-    page_count = len(records) // LINES_PER_PAGE
-
-    for page_number in range(page_count):
-        page_start = page_number * LINES_PER_PAGE
-        page = records[page_start : page_start + LINES_PER_PAGE]
-
-        # First page starts immediately with the heading.
-        # Continuation pages have one blank top-margin line.
-        heading_line = 0 if page_number == 0 else 1
-        title_line = heading_line + 1
-
-        if not page[heading_line].startswith(
-            b"CALENDAR MANAGEMENT SYSTEM"
-        ):
+        if record[TEXT_BYTES:] != b"\r\n":
             raise SystemExit(
-                f"{path}: missing system heading on page "
-                f"{page_number + 1}"
+                f"{path}: invalid line ending at line {number}"
             )
 
-        if report_id not in page[heading_line]:
+    page_starts = [
+        index
+        for index, record in enumerate(records)
+        if record[:TEXT_BYTES].startswith(SYSTEM_HEADING)
+    ]
+
+    if not page_starts:
+        raise SystemExit(
+            f"{path}: report contains no page heading"
+        )
+
+    if page_starts[0] != 0:
+        raise SystemExit(
+            f"{path}: first page does not start with the system heading"
+        )
+
+    for page_number, start in enumerate(page_starts, 1):
+        heading = records[start][:TEXT_BYTES]
+
+        if report_id not in heading:
             raise SystemExit(
-                f"{path}: missing report id on page "
-                f"{page_number + 1}"
+                f"{path}: missing report ID on page {page_number}"
             )
 
-        if not page[title_line].startswith(title):
+        if start + 1 >= len(records):
             raise SystemExit(
-                f"{path}: missing report title on page "
-                f"{page_number + 1}"
+                f"{path}: missing report title on page {page_number}"
             )
 
-        # Last physical line is always blank.
-        if page[-1][:TEXT_BYTES].strip():
+        title_line = records[start + 1][:TEXT_BYTES]
+
+        if title not in title_line:
             raise SystemExit(
-                f"{path}: invalid bottom margin on page "
-                f"{page_number + 1}"
+                f"{path}: missing report title on page {page_number}"
             )
 
-        # Only the final page carries the end-of-report marker.
-        if page_number == page_count - 1:
-            if not page[-2].startswith(end_marker):
-                raise SystemExit(
-                    f"{path}: missing final report marker"
-                )
-        else:
-            if page[-2][:TEXT_BYTES].strip():
-                raise SystemExit(
-                    f"{path}: unexpected footer on page "
-                    f"{page_number + 1}"
-                )
+    end_marker = b"*** END OF REPORT " + report_id + b" ***"
+
+    marker_positions = [
+        index
+        for index, record in enumerate(records)
+        if end_marker in record[:TEXT_BYTES]
+    ]
+
+    if len(marker_positions) != 1:
+        raise SystemExit(
+            f"{path}: expected exactly one end-of-report marker"
+        )
+
+    marker = marker_positions[0]
+
+    if marker < page_starts[-1]:
+        raise SystemExit(
+            f"{path}: end-of-report marker precedes final page"
+        )
+
+    if any(
+        record[:TEXT_BYTES].strip()
+        for record in records[marker + 1:]
+    ):
+        raise SystemExit(
+            f"{path}: non-blank data follows end-of-report marker"
+        )
 
     if client_column is not None and not any(
-        record[client_column : client_column + 11] == b"TEST CLIENT"
+        record[
+            client_column:client_column + 11
+        ] == b"TEST CLIENT"
         for record in records
     ):
         raise SystemExit(
@@ -106,17 +120,15 @@ def validate(
 
 validate(
     Path("build/test-service.txt"),
+    b"CALR01",
     b"APPOINTMENT CALENDAR",
-    b"REPORT CALR01",
-    b"*** END OF REPORT CALR01 ***",
     None,
 )
 
 validate(
     Path("build/test-service-list.txt"),
+    b"CALR02",
     b"APPOINTMENT LIST",
-    b"REPORT CALR02",
-    b"*** END OF REPORT CALR02 ***",
     31,
 )
 
