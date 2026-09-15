@@ -66,6 +66,7 @@ static char transaction_path[PATH_SIZE + 1];
 static int transaction_depth;
 static sqlite3 *appointment_scan_db;
 static sqlite3_stmt *appointment_scan;
+static int appointment_scan_owned;
 static char appointment_scan_path[PATH_SIZE + 1];
 static sqlite3_stmt *user_scan;
 
@@ -214,7 +215,8 @@ void appt_db_put(char*p,char*r,char*s,char*m){write_appointment(p,r,s,m,0);} voi
 void appt_db_delete(char *path,char *id_fixed,char *status,char *message){int owned=0,rc;char id[10];sqlite3_stmt*st=NULL;sqlite3*db=open_database(path,1,status,message,&owned);if(!db)return;fixed_to_c(id,sizeof id,id_fixed,9);rc=sqlite3_prepare_v2(db,"DELETE FROM appointments WHERE appointment_id=?",-1,&st,NULL);if(rc==SQLITE_OK){sqlite3_bind_text(st,1,id,-1,SQLITE_TRANSIENT);rc=sqlite3_step(st);}if(rc!=SQLITE_DONE)mapped_error(db,rc,status,message,"Deleting appointment");else if(sqlite3_changes(db)==0)set_result(status,message,APPT_NOT_FOUND,"Appointment not found");else set_result(status,message,APPT_OK,"");sqlite3_finalize(st);close_owned(db,owned);}
 void appt_db_scan_open(char*status,char*message){
     sqlite3_finalize(appointment_scan); appointment_scan=NULL;
-    if(appointment_scan_db){sqlite3_close(appointment_scan_db);appointment_scan_db=NULL;}
+    if(appointment_scan_db && appointment_scan_owned)sqlite3_close(appointment_scan_db);
+    appointment_scan_db=NULL; appointment_scan_owned=0;
     appointment_scan_path[0]=0;
     set_result(status,message,APPT_OK,"");
 }
@@ -225,17 +227,14 @@ void appt_db_scan_next(char *path,char *record,char *status,char *message){
         int owned=0;
         appointment_scan_db=open_database(path,1,status,message,&owned);
         if(!appointment_scan_db)return;
-        if(!owned){
-            appointment_scan_db=NULL;
-            set_result(status,message,APPT_REPOSITORY_ERROR,"Appointment scan cannot share an active transaction");
-            return;
-        }
+        appointment_scan_owned=owned;
         strncpy(appointment_scan_path,p,PATH_SIZE); appointment_scan_path[PATH_SIZE]=0;
         const char *sql="SELECT schema_version,appointment_id,series_id,start_date,end_date,iso_year,iso_week,client,subject,status,created_at,updated_at,cancelled_on,cancel_note,recurrence,series_until,revision FROM appointments ORDER BY appointment_id";
         rc=sqlite3_prepare_v2(appointment_scan_db,sql,-1,&appointment_scan,NULL);
         if(rc!=SQLITE_OK){
             mapped_error(appointment_scan_db,rc,status,message,"Scanning appointments");
-            sqlite3_close(appointment_scan_db); appointment_scan_db=NULL; appointment_scan_path[0]=0;
+            if(appointment_scan_owned)sqlite3_close(appointment_scan_db);
+            appointment_scan_db=NULL; appointment_scan_owned=0; appointment_scan_path[0]=0;
             return;
         }
     }else if(strcmp(p,appointment_scan_path)!=0){
@@ -252,8 +251,8 @@ void appt_db_scan_next(char *path,char *record,char *status,char *message){
 }
 void appt_db_scan_close(char*status,char*message){
     sqlite3_finalize(appointment_scan); appointment_scan=NULL;
-    if(appointment_scan_db)sqlite3_close(appointment_scan_db);
-    appointment_scan_db=NULL; appointment_scan_path[0]=0;
+    if(appointment_scan_db && appointment_scan_owned)sqlite3_close(appointment_scan_db);
+    appointment_scan_db=NULL; appointment_scan_owned=0; appointment_scan_path[0]=0;
     set_result(status,message,APPT_OK,"");
 }
 void appt_db_begin(char *path,char *status,char *message){char p[PATH_SIZE+1];fixed_to_c(p,sizeof p,path,PATH_SIZE);if(transaction_db){if(strcmp(p,transaction_path)){set_result(status,message,APPT_REPOSITORY_ERROR,"A different database transaction is active");return;}transaction_depth++;set_result(status,message,APPT_OK,"");return;}int owned=0;transaction_db=open_database(path,1,status,message,&owned);if(!transaction_db)return;strcpy(transaction_path,p);if(exec_sql(transaction_db,"BEGIN IMMEDIATE",status,message,"Starting transaction")!=APPT_OK){sqlite3_close(transaction_db);transaction_db=NULL;transaction_path[0]=0;return;}transaction_depth=1;set_result(status,message,APPT_OK,"");}
