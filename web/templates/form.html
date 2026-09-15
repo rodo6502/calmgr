@@ -2,18 +2,116 @@
 {% block title %}{{ action }} appointment{% endblock %}
 {% block body %}
 <p class="eyebrow">CONTROLLED JSON INPUT</p><h2>{{ 'Add appointment' if action == 'Create' else 'Edit appointment' }}</h2>
+
 <form method="post" class="form-grid">
   <input type="hidden" name="csrf" value="{{ csrf_token() }}">
-  <label>Start date <span>DD.MM.YYYY</span><input name="start_date" value="{{ item.start_date or '' }}" placeholder="20.09.2026" required maxlength="10"></label>
-  <label>End date <span>DD.MM.YYYY</span><input name="end_date" value="{{ item.end_date or '' }}" placeholder="23.09.2026" required maxlength="10"></label>
-  <label>Client <span>60 characters</span><input name="client" value="{{ item.client or '' }}" required maxlength="60"></label>
-  <label class="wide">Subject <span>100 characters</span><textarea name="subject" rows="3" required maxlength="100">{{ item.subject or '' }}</textarea></label>
+
+  <label>
+    Calendar year
+    <span>YYYY</span>
+    <input
+      name="week_year"
+      value="{{ week_year }}"
+      maxlength="4"
+      inputmode="numeric">
+  </label>
+
+  <label>
+    Calendar week
+    <span>1-53</span>
+    <input
+      name="week_number"
+      value="{{ week_number }}"
+      maxlength="2"
+      inputmode="numeric">
+  </label>
+
+  <div class="actions wide">
+    <button
+      class="button secondary"
+      type="submit"
+      name="use_week"
+      value="1"
+      formnovalidate>Use week</button>
+  </div>
+
+  <label>
+    Start date
+    <span>DD.MM.YYYY</span>
+    <input
+      name="start_date"
+      value="{{ item.start_date or '' }}"
+      placeholder="20.09.2026"
+      required
+      maxlength="10">
+  </label>
+
+  <label>
+    End date
+    <span>DD.MM.YYYY</span>
+    <input
+      name="end_date"
+      value="{{ item.end_date or '' }}"
+      placeholder="23.09.2026"
+      required
+      maxlength="10">
+  </label>
+
+  <label>
+    Client
+    <span>60 characters</span>
+    <input
+      name="client"
+      value="{{ item.client or '' }}"
+      required
+      maxlength="60">
+  </label>
+
+  <label class="wide">
+    Subject
+    <span>100 characters</span>
+    <textarea
+      name="subject"
+      rows="3"
+      required
+      maxlength="100">{{ item.subject or '' }}</textarea>
+  </label>
+
   {% if add %}
-  <label>Recurrence<select name="recurrence"><option value="N" {{ 'selected' if (item.recurrence or 'N') == 'N' }}>None</option><option value="W" {{ 'selected' if item.recurrence == 'W' }}>Weekly</option><option value="B" {{ 'selected' if item.recurrence == 'B' }}>Every two weeks</option><option value="M" {{ 'selected' if item.recurrence == 'M' }}>Monthly</option><option value="Y" {{ 'selected' if item.recurrence == 'Y' }}>Yearly</option></select></label>
-  <label>Series until <span>required for recurrence</span><input name="series_until" value="{{ item.series_until or '' }}" maxlength="10" placeholder="15.12.2027"></label>
+  <label>
+    Recurrence
+    <select name="recurrence">
+      <option value="N" {{ 'selected' if (item.recurrence or 'N') == 'N' }}>None</option>
+      <option value="W" {{ 'selected' if item.recurrence == 'W' }}>Weekly</option>
+      <option value="B" {{ 'selected' if item.recurrence == 'B' }}>Every two weeks</option>
+      <option value="M" {{ 'selected' if item.recurrence == 'M' }}>Monthly</option>
+      <option value="Y" {{ 'selected' if item.recurrence == 'Y' }}>Yearly</option>
+    </select>
+  </label>
+
+  <label>
+    Series until
+    <span>required for recurrence</span>
+    <input
+      name="series_until"
+      value="{{ item.series_until or '' }}"
+      maxlength="10"
+      placeholder="15.12.2027">
+  </label>
   {% else %}
-  <label>Apply changes to<select name="scope"><option value="single">Only this appointment</option><option value="following">This and following</option><option value="series">Entire series</option></select></label>
+  <label>
+    Apply changes to
+    <select name="scope">
+      <option value="single">Only this appointment</option>
+      <option value="following">This and following</option>
+      <option value="series">Entire series</option>
+    </select>
+  </label>
   {% endif %}
-  <div class="actions wide"><button class="button" type="submit">{{ action }}</button><a class="button secondary" href="{{ url_for('index') }}">Cancel</a></div>
+
+  <div class="actions wide">
+    <button class="button" type="submit">{{ action }}</button>
+    <a class="button secondary" href="{{ url_for('index') }}">Cancel</a>
+  </div>
 </form>
 {% endblock %}

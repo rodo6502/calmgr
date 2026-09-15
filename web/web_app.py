@@ -193,8 +193,38 @@ def display_date(value: Any) -> str:
     return ""
 
 
+
 def iso_date(value: date) -> str:
     return value.strftime("%Y-%m-%d")
+
+
+
+def week_values(item: dict[str, Any]) -> tuple[str, str]:
+    """Return sensible ISO year/week defaults for the appointment form."""
+    text = str(item.get("start_date", "")).strip()
+    try:
+        selected = datetime.strptime(text, "%d.%m.%Y").date()
+    except ValueError:
+        selected = date.today()
+    iso = selected.isocalendar()
+    return str(iso.year), str(iso.week)
+
+
+def apply_selected_week(item: dict[str, str]) -> tuple[str, str]:
+    """Apply a submitted ISO week to the form item and return year/week."""
+    week_year = request.form.get("week_year", "").strip()
+    week_number = request.form.get("week_number", "").strip()
+    try:
+        year = int(week_year)
+        week = int(week_number)
+        monday = date.fromisocalendar(year, week, 1)
+        sunday = date.fromisocalendar(year, week, 7)
+    except (TypeError, ValueError):
+        abort(400, "Invalid calendar week")
+    item["start_date"] = monday.strftime("%d.%m.%Y")
+    item["end_date"] = sunday.strftime("%d.%m.%Y")
+    return str(year), str(week)
+
 
 
 def parse_anchor(value: str | None, default: date | None = None) -> date:
@@ -355,20 +385,37 @@ def new() -> Any:
                 recurrence=str(copied.get("recurrence", "N")),
                 series_until=display_date(copied.get("series_until")),
             )
+    week_year, week_number = week_values(item)
     if request.method == "POST":
+        for name in ("start_date", "end_date", "series_until", "client", "subject", "recurrence"):
+            item[name] = request.form.get(name, "").strip()
+        if "use_week" in request.form:
+            week_year, week_number = apply_selected_week(item)
+            return render_template(
+                "form.html", item=item, action="Create", add=True,
+                week_year=week_year, week_number=week_number,
+            )
         payload = {"command": "add"}
-        for name in ("start_date", "end_date", "client", "subject", "recurrence", "series_until"):
+        for name in ("start_date", "end_date", "series_until"):
             value = request.form.get(name, "").strip()
+            item[name] = value
             if value:
                 payload[name] = value
+        for name in ("client", "subject", "recurrence"):
+            value = request.form.get(name, "").strip()
             item[name] = value
+            if value:
+                payload[name] = value
         result = call_batch(payload)
         flash(result["message"], "success")
         created = result.get("appointments", [])
         if created and isinstance(created[0], dict) and created[0].get("id"):
             return redirect(url_for("show", appointment_id=created[0]["id"]))
         return redirect(url_for("index", mode="all"))
-    return render_template("form.html", item=item, action="Create", add=True)
+    return render_template(
+        "form.html", item=item, action="Create", add=True,
+        week_year=week_year, week_number=week_number,
+    )
 
 
 @app.get("/appointment/<appointment_id>")
@@ -389,24 +436,40 @@ def show(appointment_id: str) -> Any:
 def edit(appointment_id: str) -> Any:
     appointment_id = checked_id(appointment_id)
     item = call_batch({"command": "show", "id": appointment_id})["appointments"][0]
+    view_item = dict(item)
+    view_item["start_date"] = display_date(item.get("start_date"))
+    view_item["end_date"] = display_date(item.get("end_date"))
+    view_item["series_until"] = display_date(item.get("series_until"))
+    week_year, week_number = week_values(view_item)
     if request.method == "POST":
+        for name in ("start_date", "end_date", "series_until", "client", "subject"):
+            view_item[name] = request.form.get(name, "").strip()
+        if "use_week" in request.form:
+            week_year, week_number = apply_selected_week(view_item)
+            return render_template(
+                "form.html", item=view_item, action="Edit", add=False,
+                week_year=week_year, week_number=week_number,
+            )
         payload = {
             "command": "edit", "id": appointment_id,
             "expected_revision": str(item["revision"]),
             "scope": request.form.get("scope", "single"),
         }
-        for name in ("start_date", "end_date", "client", "subject", "series_until"):
+        for name in ("start_date", "end_date", "series_until"):
+            value = request.form.get(name, "").strip()
+            if value:
+                payload[name] = value
+        for name in ("client", "subject"):
             value = request.form.get(name, "").strip()
             if value:
                 payload[name] = value
         result = call_batch(payload)
         flash(result["message"], "success")
         return redirect(url_for("show", appointment_id=appointment_id))
-    view_item = dict(item)
-    view_item["start_date"] = display_date(item.get("start_date"))
-    view_item["end_date"] = display_date(item.get("end_date"))
-    view_item["series_until"] = display_date(item.get("series_until"))
-    return render_template("form.html", item=view_item, action="Edit", add=False)
+    return render_template(
+        "form.html", item=view_item, action="Edit", add=False,
+        week_year=week_year, week_number=week_number,
+    )
 
 
 @app.post("/appointment/<appointment_id>/<action>")
