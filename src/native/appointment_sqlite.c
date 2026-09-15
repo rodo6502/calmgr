@@ -64,7 +64,9 @@ int crypto_pwhash_str_verify(const char *, const char *, unsigned long long);
 static sqlite3 *transaction_db;
 static char transaction_path[PATH_SIZE + 1];
 static int transaction_depth;
-static char scan_after[10];
+static sqlite3 *appointment_scan_db;
+static sqlite3_stmt *appointment_scan;
+static char appointment_scan_path[PATH_SIZE + 1];
 static sqlite3_stmt *user_scan;
 
 void appt_read_stdin(char *line, char *at_end) {
@@ -210,10 +212,50 @@ static void write_appointment(char *path,char *record,char *status,char *message
 }
 void appt_db_put(char*p,char*r,char*s,char*m){write_appointment(p,r,s,m,0);} void appt_db_update(char*p,char*r,char*s,char*m){write_appointment(p,r,s,m,1);}
 void appt_db_delete(char *path,char *id_fixed,char *status,char *message){int owned=0,rc;char id[10];sqlite3_stmt*st=NULL;sqlite3*db=open_database(path,1,status,message,&owned);if(!db)return;fixed_to_c(id,sizeof id,id_fixed,9);rc=sqlite3_prepare_v2(db,"DELETE FROM appointments WHERE appointment_id=?",-1,&st,NULL);if(rc==SQLITE_OK){sqlite3_bind_text(st,1,id,-1,SQLITE_TRANSIENT);rc=sqlite3_step(st);}if(rc!=SQLITE_DONE)mapped_error(db,rc,status,message,"Deleting appointment");else if(sqlite3_changes(db)==0)set_result(status,message,APPT_NOT_FOUND,"Appointment not found");else set_result(status,message,APPT_OK,"");sqlite3_finalize(st);close_owned(db,owned);}
-void appt_db_scan_open(char*status,char*message){memset(scan_after,0,sizeof scan_after);set_result(status,message,APPT_OK,"");}
+void appt_db_scan_open(char*status,char*message){
+    sqlite3_finalize(appointment_scan); appointment_scan=NULL;
+    if(appointment_scan_db){sqlite3_close(appointment_scan_db);appointment_scan_db=NULL;}
+    appointment_scan_path[0]=0;
+    set_result(status,message,APPT_OK,"");
+}
 void appt_db_scan_next(char *path,char *record,char *status,char *message){
- int owned=0,rc;sqlite3_stmt*st=NULL;sqlite3*db=open_database(path,1,status,message,&owned);if(!db)return;const char*sql="SELECT appointment_id FROM appointments WHERE appointment_id>? ORDER BY appointment_id LIMIT 1";rc=sqlite3_prepare_v2(db,sql,-1,&st,NULL);if(rc==SQLITE_OK){sqlite3_bind_text(st,1,scan_after,-1,SQLITE_TRANSIENT);rc=sqlite3_step(st);}if(rc==SQLITE_ROW){const char*n=(const char*)sqlite3_column_text(st,0);strncpy(scan_after,n,9);scan_after[9]=0;sqlite3_finalize(st);close_owned(db,owned);char f[9];c_to_fixed(f,9,scan_after);appt_db_get(path,f,record,status,message);return;}if(rc==SQLITE_DONE)set_result(status,message,APPT_NOT_FOUND,"End of repository");else mapped_error(db,rc,status,message,"Scanning appointments");sqlite3_finalize(st);close_owned(db,owned);}
-void appt_db_scan_close(char*status,char*message){memset(scan_after,0,sizeof scan_after);set_result(status,message,APPT_OK,"");}
+    int rc; char p[PATH_SIZE+1];
+    fixed_to_c(p,sizeof p,path,PATH_SIZE);
+    if(!appointment_scan){
+        int owned=0;
+        appointment_scan_db=open_database(path,1,status,message,&owned);
+        if(!appointment_scan_db)return;
+        if(!owned){
+            appointment_scan_db=NULL;
+            set_result(status,message,APPT_REPOSITORY_ERROR,"Appointment scan cannot share an active transaction");
+            return;
+        }
+        strncpy(appointment_scan_path,p,PATH_SIZE); appointment_scan_path[PATH_SIZE]=0;
+        const char *sql="SELECT schema_version,appointment_id,series_id,start_date,end_date,iso_year,iso_week,client,subject,status,created_at,updated_at,cancelled_on,cancel_note,recurrence,series_until,revision FROM appointments ORDER BY appointment_id";
+        rc=sqlite3_prepare_v2(appointment_scan_db,sql,-1,&appointment_scan,NULL);
+        if(rc!=SQLITE_OK){
+            mapped_error(appointment_scan_db,rc,status,message,"Scanning appointments");
+            sqlite3_close(appointment_scan_db); appointment_scan_db=NULL; appointment_scan_path[0]=0;
+            return;
+        }
+    }else if(strcmp(p,appointment_scan_path)!=0){
+        set_result(status,message,APPT_REPOSITORY_ERROR,"Appointment scan database path changed");
+        return;
+    }
+    rc=sqlite3_step(appointment_scan);
+    if(rc==SQLITE_DONE){set_result(status,message,APPT_NOT_FOUND,"End of repository");return;}
+    if(rc!=SQLITE_ROW){mapped_error(appointment_scan_db,rc,status,message,"Scanning appointments");return;}
+    memset(record,' ',RECORD_SIZE); char num[16];
+    snprintf(num,sizeof num,"%02d",sqlite3_column_int(appointment_scan,0));memcpy(record,num,2);
+    put_field(record,2,9,sqlite3_column_text(appointment_scan,1));put_field(record,11,9,sqlite3_column_text(appointment_scan,2));put_field(record,20,8,sqlite3_column_text(appointment_scan,3));put_field(record,28,8,sqlite3_column_text(appointment_scan,4));put_field(record,36,4,sqlite3_column_text(appointment_scan,5));put_field(record,40,2,sqlite3_column_text(appointment_scan,6));put_field(record,42,60,sqlite3_column_text(appointment_scan,7));put_field(record,102,100,sqlite3_column_text(appointment_scan,8));put_field(record,202,1,sqlite3_column_text(appointment_scan,9));put_field(record,203,20,sqlite3_column_text(appointment_scan,10));put_field(record,223,20,sqlite3_column_text(appointment_scan,11));put_field(record,243,8,sqlite3_column_text(appointment_scan,12));put_field(record,251,120,sqlite3_column_text(appointment_scan,13));put_field(record,371,1,sqlite3_column_text(appointment_scan,14));put_field(record,372,8,sqlite3_column_text(appointment_scan,15));snprintf(num,sizeof num,"%09d",sqlite3_column_int(appointment_scan,16));memcpy(record+380,num,9);
+    set_result(status,message,APPT_OK,"");
+}
+void appt_db_scan_close(char*status,char*message){
+    sqlite3_finalize(appointment_scan); appointment_scan=NULL;
+    if(appointment_scan_db)sqlite3_close(appointment_scan_db);
+    appointment_scan_db=NULL; appointment_scan_path[0]=0;
+    set_result(status,message,APPT_OK,"");
+}
 void appt_db_begin(char *path,char *status,char *message){char p[PATH_SIZE+1];fixed_to_c(p,sizeof p,path,PATH_SIZE);if(transaction_db){if(strcmp(p,transaction_path)){set_result(status,message,APPT_REPOSITORY_ERROR,"A different database transaction is active");return;}transaction_depth++;set_result(status,message,APPT_OK,"");return;}int owned=0;transaction_db=open_database(path,1,status,message,&owned);if(!transaction_db)return;strcpy(transaction_path,p);if(exec_sql(transaction_db,"BEGIN IMMEDIATE",status,message,"Starting transaction")!=APPT_OK){sqlite3_close(transaction_db);transaction_db=NULL;transaction_path[0]=0;return;}transaction_depth=1;set_result(status,message,APPT_OK,"");}
 void appt_db_commit(char*status,char*message){if(!transaction_db){set_result(status,message,APPT_REPOSITORY_ERROR,"No database transaction is active");return;}if(--transaction_depth>0){set_result(status,message,APPT_OK,"");return;}if(exec_sql(transaction_db,"COMMIT",status,message,"Committing transaction")!=APPT_OK){sqlite3_exec(transaction_db,"ROLLBACK",NULL,NULL,NULL);}else set_result(status,message,APPT_OK,"");sqlite3_close(transaction_db);transaction_db=NULL;transaction_path[0]=0;transaction_depth=0;}
 void appt_db_rollback(char*status,char*message){if(transaction_db){sqlite3_exec(transaction_db,"ROLLBACK",NULL,NULL,NULL);sqlite3_close(transaction_db);}transaction_db=NULL;transaction_path[0]=0;transaction_depth=0;set_result(status,message,APPT_OK,"");}
