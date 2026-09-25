@@ -17,7 +17,9 @@
           05 LINE 12 COLUMN 3 VALUE "M   Permanent-delete maintenance"
              FOREGROUND-COLOR 6.
           05 LINE 13 COLUMN 3 VALUE "S   Search and filter appointments".
-          05 LINE 15 COLUMN 3 VALUE "Q   Quit".
+          05 LINE 14 COLUMN 3 VALUE "U   Purge eligible cancelled appointments"
+             FOREGROUND-COLOR 6.
+          05 LINE 16 COLUMN 3 VALUE "Q   Quit".
           05 LINE 18 COLUMN 3 VALUE "Key:".
           05 LINE 18 COLUMN 8 PIC X USING TUI-CHOICE
              FOREGROUND-COLOR 0 BACKGROUND-COLOR 7 HIGHLIGHT AUTO.
@@ -178,7 +180,7 @@
           05 LINE 1 COLUMN 1 PIC X(80) FROM TUI-SCREEN-TITLE
              FOREGROUND-COLOR 7 BACKGROUND-COLOR 4 HIGHLIGHT.
           05 LINE 8 COLUMN 8 PIC X(60) FROM TUI-SCREEN-PROMPT.
-          05 LINE 10 COLUMN 30 PIC X(8) USING TUI-SCREEN-TOKEN
+          05 LINE 10 COLUMN 30 PIC X(16) USING TUI-SCREEN-TOKEN
              REQUIRED UNDERLINE.
           05 LINE 22 COLUMN 3 VALUE "ENTER confirms   ESC cancels"
              FOREGROUND-COLOR 3.

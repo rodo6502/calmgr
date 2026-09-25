@@ -32,7 +32,7 @@ BATCH = Path(os.environ.get("CALMGR_BATCH", os.environ.get("APPOINTMENT_BATCH", 
 TIMEOUT = float(os.environ.get("CALMGR_BATCH_TIMEOUT", os.environ.get("APPOINTMENT_BATCH_TIMEOUT", "20")))
 LOCK = threading.Lock()
 COMMANDS = {
-    "list", "show", "add", "edit", "cancel", "reactivate", "delete",
+    "list", "show", "add", "edit", "cancel", "reactivate", "delete", "purge",
     "backup", "restore", "reset-database", "print-export", "print-list-export",
     "csv-export", "csv-import", "ical-export", "init", "user-bootstrap",
     "user-add", "user-list", "user-password", "user-disable", "user-enable",
@@ -484,6 +484,13 @@ def trash_view() -> Any:
             cancellations[entry["id"]] = entry["time"]
     retention = int(config_values().get("CANCEL_RETENTION_DAYS", "90") or "90")
     return render_template("trash.html", items=items, cancellations=cancellations, retention=retention, query=request.args.get("q", ""))
+
+
+@app.post("/trash/purge")
+def purge_trash() -> Any:
+    result = call_batch({"command": "purge", "confirm": "DELETE ALL"})
+    flash(result["message"], "success")
+    return redirect(url_for("trash_view"))
 
 
 @app.route("/export", methods=["GET", "POST"])
